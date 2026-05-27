@@ -3646,190 +3646,571 @@ end)
 
 
 -- ============================================
--- FAST ATTACK MODULE (TỪ FILE ĐẦU)
+-- SUPER FAST ATTACK - TÍCH HỢP FILE ĐẦU
+-- CHẾ ĐỘ: EXTREME FAST (0.01s - 100 ĐÒN/GIÂY)
 -- ============================================
 
-_G.FastAttackActive = false
-_G.Fast_Delay = 0.15
+-- ===== KHỞI TẠO BIẾN TOÀN CỤC =====
+_G.FastAttackActive = true
+_G.Fast_Delay = 0.01
+_G.Seriality = true
+_G.UseNewFastAttack = true
+_G.FastAttackMode = "Extreme Fast Attack"
 
--- Bảng tốc độ Fast Attack
+-- Cập nhật Settings
+if _G.Settings and _G.Settings.Setting then
+    _G.Settings.Setting["Fast Attack New"] = true
+    _G.Settings.Setting["Fast Attack Delay"] = 0.01
+end
+
+-- ===== BẢNG TỐC ĐỘ (TỪ FILE ĐẦU) =====
 local FastAttackSpeeds = {
     ["Normal Attack"] = 0.25,
     ["Fast Attack"] = 0.15,
     ["Super Fast Attack"] = 0.05,
-    ["Dí siêu nhanh Attack"] = 0.1
+    ["Dí siêu nhanh Attack"] = 0.1,
+    ["Extreme Fast Attack"] = 0.01
 }
 
--- Hàm UsesKills - gửi phím kỹ năng
-function UsesKills(weaponType, skillKey)
-    if weaponType == "Melee" then
-        for _, v in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
-            if v.ToolTip == "Melee" then
-                game.Players.LocalPlayer.Character.Humanoid:EquipTool(v)
-                break
-            end
-        end
-        if skillKey == "Z" then
-            game:GetService("VirtualInputManager"):SendKeyEvent(true, "Z", false, game)
-            task.wait(0.05)
-            game:GetService("VirtualInputManager"):SendKeyEvent(false, "Z", false, game)
-        elseif skillKey == "X" then
-            game:GetService("VirtualInputManager"):SendKeyEvent(true, "X", false, game)
-            task.wait(0.05)
-            game:GetService("VirtualInputManager"):SendKeyEvent(false, "X", false, game)
-        elseif skillKey == "C" then
-            game:GetService("VirtualInputManager"):SendKeyEvent(true, "C", false, game)
-            task.wait(0.05)
-            game:GetService("VirtualInputManager"):SendKeyEvent(false, "C", false, game)
-        end
-    elseif weaponType == "Sword" then
-        for _, v in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
-            if v.ToolTip == "Sword" then
-                game.Players.LocalPlayer.Character.Humanoid:EquipTool(v)
-                break
-            end
-        end
-        if skillKey == "Z" then
-            game:GetService("VirtualInputManager"):SendKeyEvent(true, "Z", false, game)
-            task.wait(0.05)
-            game:GetService("VirtualInputManager"):SendKeyEvent(false, "Z", false, game)
-        elseif skillKey == "X" then
-            game:GetService("VirtualInputManager"):SendKeyEvent(true, "X", false, game)
-            task.wait(0.05)
-            game:GetService("VirtualInputManager"):SendKeyEvent(false, "X", false, game)
-        end
-    elseif weaponType == "Blox Fruit" then
-        for _, v in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
-            if v.ToolTip == "Blox Fruit" then
-                game.Players.LocalPlayer.Character.Humanoid:EquipTool(v)
-                break
-            end
-        end
-        if skillKey == "Z" then
-            game:GetService("VirtualInputManager"):SendKeyEvent(true, "Z", false, game)
-            task.wait(0.05)
-            game:GetService("VirtualInputManager"):SendKeyEvent(false, "Z", false, game)
-        elseif skillKey == "X" then
-            game:GetService("VirtualInputManager"):SendKeyEvent(true, "X", false, game)
-            task.wait(0.05)
-            game:GetService("VirtualInputManager"):SendKeyEvent(false, "X", false, game)
-        elseif skillKey == "C" then
-            game:GetService("VirtualInputManager"):SendKeyEvent(true, "C", false, game)
-            task.wait(0.05)
-            game:GetService("VirtualInputManager"):SendKeyEvent(false, "C", false, game)
-        elseif skillKey == "V" then
-            game:GetService("VirtualInputManager"):SendKeyEvent(true, "V", false, game)
-            task.wait(0.05)
-            game:GetService("VirtualInputManager"):SendKeyEvent(false, "V", false, game)
-        end
-    elseif weaponType == "Gun" then
-        for _, v in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
-            if v.ToolTip == "Gun" then
-                game.Players.LocalPlayer.Character.Humanoid:EquipTool(v)
-                break
-            end
-        end
-        if skillKey == "Z" then
-            game:GetService("VirtualInputManager"):SendKeyEvent(true, "Z", false, game)
-            task.wait(0.05)
-            game:GetService("VirtualInputManager"):SendKeyEvent(false, "Z", false, game)
-        elseif skillKey == "X" then
-            game:GetService("VirtualInputManager"):SendKeyEvent(true, "X", false, game)
-            task.wait(0.05)
-            game:GetService("VirtualInputManager"):SendKeyEvent(false, "X", false, game)
+-- ===== SERVICE =====
+local vim = game:GetService("VirtualInputManager")
+local vu = game:GetService("VirtualUser")
+local ts = game:GetService("TweenService")
+local rs = game:GetService("RunService")
+local replicated = game:GetService("ReplicatedStorage")
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+
+-- ===== BIẾN TOÀN CỤC KHÁC =====
+_B = _B or false
+PosMon = nil
+MonFarm = nil
+shouldTween = false
+RandomCFrame = RandomCFrame or false
+
+-- ===== HÀM EQUIP WEAPON (TỪ FILE ĐẦU) =====
+function EquipWeapon(weaponName)
+    if not weaponName then return end
+    local char = localPlayer.Character
+    if not char then return end
+    
+    if char:FindFirstChild(weaponName) then
+        return
+    end
+    
+    for _, v in pairs(localPlayer.Backpack:GetChildren()) do
+        if v.Name == weaponName or v.ToolTip == weaponName then
+            char.Humanoid:EquipTool(v)
+            break
         end
     end
 end
 
--- Method Kill chính
+-- ===== HÀM WEAPON SC (TỪ FILE ĐẦU) =====
+function weaponSc(toolTip)
+    for _, v in pairs(localPlayer.Backpack:GetChildren()) do
+        if v:IsA("Tool") and v.ToolTip == toolTip then
+            EquipWeapon(v.Name)
+            return v.Name
+        end
+    end
+    return nil
+end
+
+-- ===== HÀM USESKILLS (TỪ FILE ĐẦU - ĐÃ TỐI ƯU) =====
+function UsesKills(weaponType, skillKey)
+    local char = localPlayer.Character
+    if not char then return end
+    
+    local weaponName = weaponSc(weaponType)
+    if not weaponName then return end
+    
+    vim:SendKeyEvent(true, skillKey, false, game)
+    task.wait(0)
+    vim:SendKeyEvent(false, skillKey, false, game)
+end
+
+-- ===== HÀM TELEPORT (TỪ FILE ĐẦU) =====
+local tweenPart = nil
+
+function _tp(targetCFrame)
+    local char = localPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    
+    local hrp = char.HumanoidRootPart
+    local distance = (targetCFrame.Position - hrp.Position).Magnitude
+    
+    if distance < 5 then
+        hrp.CFrame = targetCFrame
+        return
+    end
+    
+    if not tweenPart or not tweenPart.Parent then
+        tweenPart = Instance.new("Part", workspace)
+        tweenPart.Name = "_TweenPart"
+        tweenPart.Size = Vector3.new(1, 1, 1)
+        tweenPart.Anchored = true
+        tweenPart.CanCollide = false
+        tweenPart.Transparency = 1
+    end
+    
+    local speed = 500
+    local tweenInfo = TweenInfo.new(distance / speed, Enum.EasingStyle.Linear)
+    
+    tweenPart.CFrame = hrp.CFrame
+    local tween = ts:Create(tweenPart, tweenInfo, {CFrame = targetCFrame})
+    
+    shouldTween = true
+    _G.StopTween = false
+    tween:Play()
+    
+    task.spawn(function()
+        while tween.PlaybackState == Enum.PlaybackState.Playing do
+            if _G.StopTween or not shouldTween then
+                tween:Cancel()
+                break
+            end
+            task.wait(0.05)
+        end
+        shouldTween = false
+    end)
+end
+
+function notween(targetCFrame)
+    local char = localPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = targetCFrame
+    end
+end
+
+-- ===== HÀM KÉO QUÁI (TỪ FILE ĐẦU) =====
+function BringEnemy()
+    if not _B then return end
+    if not PosMon then return end
+    
+    local char = localPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    pcall(function()
+        sethiddenproperty(localPlayer, "SimulationRadius", math.huge)
+    end)
+    
+    local bringRange = _G.BringRange or 250
+    local maxMobs = _G.MobM or 8
+    local count = 0
+    local targetPos = PosMon
+    
+    for _, mob in pairs(workspace.Enemies:GetChildren()) do
+        if count >= maxMobs then break end
+        
+        local hum = mob:FindFirstChild("Humanoid")
+        local root = mob:FindFirstChild("HumanoidRootPart")
+        if not hum or not root or hum.Health <= 0 then continue end
+        
+        local isBoss = false
+        for _, boss in ipairs({"Darkbeard", "Greybeard", "Cake Queen", "Dough King", "rip_indra"}) do
+            if mob.Name == boss then isBoss = true break end
+        end
+        if isBoss then continue end
+        
+        local dist = (root.Position - targetPos).Magnitude
+        if dist > bringRange then continue end
+        
+        count = count + 1
+        
+        pcall(function()
+            hum.WalkSpeed = 0
+            root.CanCollide = false
+            root.AssemblyLinearVelocity = Vector3.zero
+            root.AssemblyAngularVelocity = Vector3.zero
+        end)
+        
+        local destCF = CFrame.new(targetPos.X, root.Position.Y, targetPos.Z)
+        local tween = ts:Create(root, TweenInfo.new(0.35, Enum.EasingStyle.Linear), {CFrame = destCF})
+        tween:Play()
+    end
+end
+
+-- ===== G.Kill METHOD (TỪ FILE ĐẦU) =====
 G = G or {}
+
 G.Kill = function(enemy, isActive)
     if not enemy or not isActive then return end
+    
     local hrp = enemy:FindFirstChild("HumanoidRootPart")
     local hum = enemy:FindFirstChild("Humanoid")
     if not hrp or not hum or hum.Health <= 0 then return end
     
-    PosMon = hrp.Position
+    if not enemy:GetAttribute("Locked") then
+        enemy:SetAttribute("Locked", hrp.CFrame)
+    end
+    PosMon = (enemy:GetAttribute("Locked")).Position
+    
     BringEnemy()
     
     local weapon = _G.Settings.Main["Selected Weapon"] or _G.SelectWeapon or "Melee"
-    for _, v in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
-        if v.ToolTip == weapon or v.Name == weapon then
-            game.Players.LocalPlayer.Character.Humanoid:EquipTool(v)
-            break
+    EquipWeapon(weapon)
+    
+    local char = localPlayer.Character
+    if char then
+        if not char:FindFirstChild("HasBuso") then
+            replicated.Remotes.CommF_:InvokeServer("Buso")
         end
     end
     
-    local tool = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
-    if tool then
-        if tool.ToolTip == "Blox Fruit" then
-            TweenPlayer(hrp.CFrame * CFrame.new(0, 10, 0))
-        else
-            TweenPlayer(hrp.CFrame * CFrame.new(0, 30, 0))
-        end
+    local tool = char and char:FindFirstChildOfClass("Tool")
+    if tool and tool.ToolTip == "Blox Fruit" then
+        _tp(hrp.CFrame * CFrame.new(0, 10, 0))
+    else
+        _tp(hrp.CFrame * CFrame.new(0, 30, 0))
     end
     
     if RandomCFrame then
-        task.wait(0.5)
-        TweenPlayer(hrp.CFrame * CFrame.new(0, 30, 25))
-        task.wait(0.5)
-        TweenPlayer(hrp.CFrame * CFrame.new(25, 30, 0))
-        task.wait(0.5)
-        TweenPlayer(hrp.CFrame * CFrame.new(-25, 30, 0))
+        task.wait(0.3)
+        _tp(hrp.CFrame * CFrame.new(0, 30, 25))
+        task.wait(0.3)
+        _tp(hrp.CFrame * CFrame.new(25, 30, 0))
+        task.wait(0.3)
+        _tp(hrp.CFrame * CFrame.new(-25, 30, 0))
     end
-    
-    local head = enemy:FindFirstChild("Head") or hrp
-    AttackModule:AttackEnemy(head, {})
 end
 
--- Attack Loop chạy liên tục theo Fast_Delay
-task.spawn(function()
-    repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer.Character
-    while task.wait(_G.Fast_Delay or 0.15) do
+G.Kill2 = function(enemy, isActive)
+    if not enemy or not isActive then return end
+    
+    local hrp = enemy:FindFirstChild("HumanoidRootPart")
+    local hum = enemy:FindFirstChild("Humanoid")
+    if not hrp or not hum or hum.Health <= 0 then return end
+    
+    if not enemy:GetAttribute("Locked") then
+        enemy:SetAttribute("Locked", hrp.CFrame)
+    end
+    PosMon = (enemy:GetAttribute("Locked")).Position
+    
+    BringEnemy()
+    EquipWeapon(_G.Settings.Main["Selected Weapon"] or _G.SelectWeapon or "Melee")
+    
+    local char = localPlayer.Character
+    if char then
+        if not char:FindFirstChild("HasBuso") then
+            replicated.Remotes.CommF_:InvokeServer("Buso")
+        end
+    end
+    
+    local tool = char and char:FindFirstChildOfClass("Tool")
+    if tool and tool.ToolTip == "Blox Fruit" then
+        _tp(hrp.CFrame * CFrame.new(0, 10, 0))
+    else
+        _tp(hrp.CFrame * CFrame.new(0, 20, 8))
+    end
+    
+    if RandomCFrame then
+        task.wait(0.1)
+        _tp(hrp.CFrame * CFrame.new(0, 20, 25))
+        task.wait(0.1)
+        _tp(hrp.CFrame * CFrame.new(25, 20, 0))
+        task.wait(0.1)
+        _tp(hrp.CFrame * CFrame.new(-25, 20, 0))
+    end
+end
+
+G.KillSea = function(enemy, isActive)
+    if not enemy or not isActive then return end
+    
+    local hrp = enemy:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    if not enemy:GetAttribute("Locked") then
+        enemy:SetAttribute("Locked", hrp.CFrame)
+    end
+    PosMon = (enemy:GetAttribute("Locked")).Position
+    
+    BringEnemy()
+    EquipWeapon(_G.Settings.Main["Selected Weapon"] or _G.SelectWeapon or "Melee")
+    
+    local char = localPlayer.Character
+    local tool = char and char:FindFirstChildOfClass("Tool")
+    
+    if tool and tool.ToolTip == "Blox Fruit" then
+        _tp(hrp.CFrame * CFrame.new(0, 10, 0))
+    else
+        notween(hrp.CFrame * CFrame.new(0, 50, 8))
+        task.wait(0.85)
+        notween(hrp.CFrame * CFrame.new(0, 400, 0))
+        task.wait(1)
+    end
+end
+
+G.Sword = function(enemy, isActive)
+    if not enemy or not isActive then return end
+    
+    local hrp = enemy:FindFirstChild("HumanoidRootPart")
+    local hum = enemy:FindFirstChild("Humanoid")
+    if not hrp or not hum or hum.Health <= 0 then return end
+    
+    if not enemy:GetAttribute("Locked") then
+        enemy:SetAttribute("Locked", hrp.CFrame)
+    end
+    PosMon = (enemy:GetAttribute("Locked")).Position
+    
+    BringEnemy()
+    weaponSc("Sword")
+    _tp(hrp.CFrame * CFrame.new(0, 25, 0))
+    
+    if RandomCFrame then
+        task.wait(0.1)
+        _tp(hrp.CFrame * CFrame.new(0, 25, 20))
+        task.wait(0.1)
+        _tp(hrp.CFrame * CFrame.new(20, 25, 0))
+        task.wait(0.1)
+        _tp(hrp.CFrame * CFrame.new(-20, 25, 0))
+    end
+end
+
+G.Mas = function(enemy, isActive)
+    if not enemy or not isActive then return end
+    
+    local hrp = enemy:FindFirstChild("HumanoidRootPart")
+    local hum = enemy:FindFirstChild("Humanoid")
+    if not hrp or not hum or hum.Health <= 0 then return end
+    
+    if not enemy:GetAttribute("Locked") then
+        enemy:SetAttribute("Locked", hrp.CFrame)
+    end
+    PosMon = (enemy:GetAttribute("Locked")).Position
+    
+    BringEnemy()
+    
+    local healthM = _G.Settings.Main["Mastery Health"] or 25
+    if hum.Health <= healthM then
+        _tp(hrp.CFrame * CFrame.new(0, 20, 0))
+        UsesKills("Blox Fruit", "Z")
+        UsesKills("Blox Fruit", "X")
+        UsesKills("Blox Fruit", "C")
+    else
+        weaponSc("Melee")
+        _tp(hrp.CFrame * CFrame.new(0, 30, 0))
+    end
+end
+
+G.Masgun = function(enemy, isActive)
+    if not enemy or not isActive then return end
+    
+    local hrp = enemy:FindFirstChild("HumanoidRootPart")
+    local hum = enemy:FindFirstChild("Humanoid")
+    if not hrp or not hum or hum.Health <= 0 then return end
+    
+    if not enemy:GetAttribute("Locked") then
+        enemy:SetAttribute("Locked", hrp.CFrame)
+    end
+    PosMon = (enemy:GetAttribute("Locked")).Position
+    
+    BringEnemy()
+    
+    local healthM = _G.Settings.Main["Mastery Health"] or 25
+    if hum.Health <= healthM then
+        _tp(hrp.CFrame * CFrame.new(0, 35, 8))
+        UsesKills("Gun", "Z")
+        UsesKills("Gun", "X")
+    else
+        weaponSc("Melee")
+        _tp(hrp.CFrame * CFrame.new(0, 30, 0))
+    end
+end
+
+-- ===== HÀM TẤN CÔNG REMOTE (QUAN TRỌNG NHẤT) =====
+local AttackModule = {}
+local RegisterAttack = replicated.Modules.Net["RE/RegisterAttack"]
+local RegisterHit = replicated.Modules.Net["RE/RegisterHit"]
+
+AttackModule.AttackEnemy = function(enemyHead, hitTable)
+    if enemyHead then
         pcall(function()
-            local farmActive = _G.Settings.Main["Auto Farm"] 
-                or _G.Settings.Main["Auto Farm Mon"] 
-                or _G.Settings.Main["Auto Farm Fast"]
-                or _G.Settings.Main["Auto Farm All Boss"]
-                or _G.Settings.Main["Auto Farm Boss"]
-                or _G.Settings.Main["Auto Farm Fruit Mastery"]
-                or _G.Settings.Main["Auto Farm Sword Mastery"]
-                or _G.Settings.Main["Auto Farm Gun Mastery"]
-                or _G.Settings.Farm["Auto Farm Bone"]
-                or _G.EclipseStartFarm
+            RegisterAttack:FireServer(0)
+            RegisterAttack:FireServer(1)
+            RegisterAttack:FireServer(2)
+            RegisterAttack:FireServer(3)
+            RegisterHit:FireServer(enemyHead, hitTable or {})
+        end)
+    end
+end
+
+AttackModule.AttackNearest = function()
+    local targets = {}
+    local myChar = localPlayer.Character
+    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    
+    if not myRoot then return end
+    
+    for _, enemy in pairs(workspace.Enemies:GetChildren()) do
+        local hrp = enemy:FindFirstChild("HumanoidRootPart")
+        local hum = enemy:FindFirstChild("Humanoid")
+        if hrp and hum and hum.Health > 0 then
+            local dist = (hrp.Position - myRoot.Position).Magnitude
+            if dist <= 80 then
+                table.insert(targets, enemy)
+            end
+        end
+    end
+    
+    for _, target in ipairs(targets) do
+        local head = target:FindFirstChild("Head") or target:FindFirstChild("HumanoidRootPart")
+        if head then
+            AttackModule.AttackEnemy(head, {})
+        end
+    end
+end
+
+-- ===== FAST ATTACK LOOP CHÍNH (0.01s) =====
+local attackCount = 0
+local lastTime = tick()
+
+task.spawn(function()
+    repeat task.wait() until game:IsLoaded() and localPlayer.Character
+    
+    while task.wait(_G.Fast_Delay or 0.01) do
+        pcall(function()
+            -- Kiểm tra farm có đang bật không
+            local farmActive = false
+            if _G.Settings then
+                farmActive = _G.Settings.Main["Auto Farm"] 
+                    or _G.Settings.Main["Auto Farm Mon"] 
+                    or _G.Settings.Main["Auto Farm Fast"]
+                    or _G.Settings.Main["Auto Farm All Boss"]
+                    or _G.Settings.Main["Auto Farm Boss"]
+                    or _G.Settings.Main["Auto Farm Fruit Mastery"]
+                    or _G.Settings.Main["Auto Farm Sword Mastery"]
+                    or _G.Settings.Main["Auto Farm Gun Mastery"]
+                    or _G.Settings.Farm["Auto Farm Bone"]
+                    or _G.EclipseStartFarm
+                    or _G.EclipseAutoTyrant
+            end
             
-            if not farmActive then return end
+            if not farmActive or not _G.Seriality then 
+                task.wait(0.1)
+                return 
+            end
             
-            local char = game.Players.LocalPlayer.Character
+            local char = localPlayer.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
             if not char or not root then return end
             
             local hum = char:FindFirstChildOfClass("Humanoid")
             if not hum or hum.Health <= 0 then return end
             
-            -- Tìm quái gần nhất
-            local closest = nil
-            local closestDist = 60
+            -- CÁCH 1: Gửi remote attack
+            pcall(function()
+                RegisterAttack:FireServer()
+                RegisterAttack:FireServer(0)
+                RegisterAttack:FireServer(1)
+                RegisterAttack:FireServer(2)
+                RegisterAttack:FireServer(3)
+            end)
             
+            -- CÁCH 2: Tấn công tất cả quái trong range
+            local enemiesHit = 0
             for _, v in pairs(workspace.Enemies:GetChildren()) do
                 local hrp = v:FindFirstChild("HumanoidRootPart")
                 local vhum = v:FindFirstChild("Humanoid")
-                if v ~= char and hrp and vhum and vhum.Health > 0 then
+                if hrp and vhum and vhum.Health > 0 then
                     local dist = (hrp.Position - root.Position).Magnitude
-                    if dist < closestDist then
-                        closestDist = dist
-                        closest = v
+                    if dist <= 80 then
+                        local head = v:FindFirstChild("Head") or hrp
+                        pcall(function()
+                            RegisterHit:FireServer(head, {})
+                        end)
+                        enemiesHit = enemiesHit + 1
+                        
+                        -- Vô hiệu hóa quái
+                        pcall(function()
+                            vhum.WalkSpeed = 0
+                            hrp.CanCollide = false
+                        end)
                     end
                 end
             end
             
-            if closest then
-                local head = closest:FindFirstChild("Head") or closest:FindFirstChild("HumanoidRootPart")
-                if head then
-                    AttackModule:AttackEnemy(head, {})
+            -- CÁCH 3: Click chuột ảo
+            pcall(function()
+                vu:CaptureController()
+                vu:Button1Down(Vector2.new(0, 0))
+                task.wait(0)
+                vu:Button1Up(Vector2.new(0, 0))
+            end)
+            
+            -- CÁCH 4: Gửi phím Z
+            pcall(function()
+                local wp = "Melee"
+                if _G.Settings and _G.Settings.Main then
+                    wp = _G.Settings.Main["Selected Weapon"] or "Melee"
                 end
+                UsesKills(wp, "Z")
+            end)
+            
+            -- CÁCH 5: Gửi phím đánh thường (click)
+            pcall(function()
+                vim:SendMouseButtonEvent(500, 500, 0, true, game, 0)
+                task.wait(0)
+                vim:SendMouseButtonEvent(500, 500, 0, false, game, 0)
+            end)
+            
+            -- Đếm số đòn đánh
+            attackCount = attackCount + math.max(1, enemiesHit)
+            local now = tick()
+            if now - lastTime >= 1 then
+                if attackCount > 50 then
+                    -- In ra màn hình nếu muốn debug
+                    -- print("⚡ Tốc độ: " .. attackCount .. " đòn/giây")
+                end
+                attackCount = 0
+                lastTime = now
             end
         end)
+    end
+end)
+
+-- ===== HÀM CHỌN CHẾ ĐỘ (CÓ THỂ GỌI HOẶC KHÔNG) =====
+function SetFastAttackMode(mode)
+    if FastAttackSpeeds[mode] then
+        _G.Fast_Delay = FastAttackSpeeds[mode]
+        _G.FastAttackMode = mode
+        _G.Seriality = true
+        _G.FastAttackActive = true
+        print("✅ Fast Attack: " .. mode .. " - " .. _G.Fast_Delay .. "s delay")
+        return true
+    end
+    return false
+end
+
+-- ===== HÀM BẬT/TẮT =====
+function EnableFastAttack()
+    _G.Seriality = true
+    _G.FastAttackActive = true
+    print("⚡ Fast Attack ENABLED")
+end
+
+function DisableFastAttack()
+    _G.Seriality = false
+    _G.FastAttackActive = false
+    print("❌ Fast Attack DISABLED")
+end
+
+-- ===== SPIN POSITION (XOAY VÒNG QUANH QUÁI) =====
+local spinAngle = 0
+task.spawn(function()
+    while task.wait(0.05) do
+        if _G.Settings and _G.Settings.Setting and _G.Settings.Setting["Spin Position"] then
+            local radius = 20
+            local farmDistance = _G.Settings.Setting["Farm Distance"] or 35
+            local radian = math.rad(spinAngle)
+            local x = math.cos(radian) * radius
+            local z = math.sin(radian) * radius
+            Pos = CFrame.new(x, farmDistance, z)
+            spinAngle = (spinAngle + 30) % 360
+        else
+            Pos = CFrame.new(0, (_G.Settings and _G.Settings.Setting and _G.Settings.Setting["Farm Distance"]) or 35, 0)
+        end
     end
 end)
 
@@ -3943,7 +4324,7 @@ InfoTab:AddParagraph({
 })
 InfoTab:AddParagraph({
 	Title = "Devs",
-	Desc = "Fias dev"
+	Desc = "Fias Hub,Axver Hub"
 })
 InfoTab:AddParagraph({
 	Title = "Helpers",
@@ -3955,7 +4336,7 @@ InfoTab:AddParagraph({
 })
 InfoTab:AddParagraph({
 	Title = "Cảm ơn tất cả!",
-	Desc = ""
+	Desc = "Fias Hub"
 })
 
 InfoTab:AddSection("Axver Hub Version Stable: 🟢")
